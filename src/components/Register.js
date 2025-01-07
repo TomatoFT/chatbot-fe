@@ -1,15 +1,25 @@
 import React, { useState } from 'react';
 import { TextField, Button, Container, Typography, Box } from '@mui/material';
+import { register } from '../api/authApi'; // Import the register function
 
 const Register = ({ onRegister }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle register logic here
-    onRegister();
+    if (password !== confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+    try {
+      const data = await register(email, password);
+      alert(data.message || 'Registration successful');
+      onRegister();
+    } catch (error) {
+      alert(error.message || 'Registration failed');
+    }
   };
 
   return (

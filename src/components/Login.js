@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
 import { TextField, Button, Container, Typography, Box } from '@mui/material';
+import { login } from '../api/authApi'; // Import the login function
 
 const Login = ({ onLogin }) => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log(e);
-    onLogin();
+    try {
+      const data = await login(username, password);
+      console.log('Login successful:', data);
+      onLogin();
+    } catch (error) {
+      console.error('Login failed:', error);
+    }
   };
 
   return (
@@ -30,8 +35,8 @@ const Login = ({ onLogin }) => {
             variant="outlined"
             margin="normal"
             fullWidth
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
           />
           <TextField
             label="Password"
