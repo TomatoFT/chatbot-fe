@@ -10,8 +10,10 @@ const Login = ({ onLogin }) => {
     e.preventDefault();
     try {
       const data = await login(username, password);
-      console.log('Login successful:', data);
-      onLogin();
+      localStorage.setItem('token', data.token);
+      console.log('User ID:', data);
+      localStorage.setItem('user_id', data.user);
+      // window.location.href = '/chat'; // Redirect to chat page after successful login
     } catch (error) {
       console.error('Login failed:', error);
     }

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import './index.css';
@@ -7,6 +7,7 @@ import ChatList from './components/ChatList';
 import ChatWindow from './components/ChatWindow';
 import Login from './components/Login';
 import Register from './components/Register';
+import { getChats, createChat, updateChat, deleteChat } from './api/chatApi'; // Import chatApi functions
 
 function App() {
   const dispatch = useDispatch();
@@ -15,45 +16,96 @@ function App() {
   const [input, setInput] = useState('');
   const [newChatName, setNewChatName] = useState('');
   const [editingChatIndex, setEditingChatIndex] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
 
-  const messages = useMemo(() => chats[currentChatIndex].messages, [chats, currentChatIndex]);
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      console.log('User is authenticated');
+      setIsAuthenticated(true);
+      fetchChats();
+    }
+  }, []);
 
-  const handleSend = () => {
+  const fetchChats = async () => {
+    try {
+      const chats = await getChats();
+      dispatch({ type: 'SET_CHATS', payload: chats });
+    } catch (error) {
+      console.error('Failed to fetch chats:', error);
+    }
+  };
+
+  const messages = useMemo(() => chats[currentChatIndex]?.messages || [], [chats, currentChatIndex]);
+
+  const handleSend = async () => {
     if (input.trim()) {
+      const newMessage = { text: input, sender: 'user' };
       dispatch({
         type: 'ADD_MESSAGE',
-        payload: { text: input, sender: 'user' },
+        payload: newMessage,
       });
       setInput('');
+      await updateChatMessages(newMessage);
       // Simulate a bot response
-      setTimeout(() => {
+      setTimeout(async () => {
+        const botMessage = { text: 'Hello! How can I help you?', sender: 'bot' };
         dispatch({
           type: 'ADD_MESSAGE',
-          payload: { text: 'Hello! How can I help you?', sender: 'bot' },
+          payload: botMessage,
         });
+        await updateChatMessages(botMessage);
       }, 1000);
     }
   };
 
-  const handleNewChat = () => {
-    dispatch({ type: 'NEW_CHAT' });
+  const updateChatMessages = async (message) => {
+    try {
+      console.log('currentChatIndex:', chats[currentChatIndex]);
+      const updatedChat = await updateChat(chats[currentChatIndex].chat.id, {
+        ...chats[currentChatIndex],
+        messages: [...chats[currentChatIndex].messages, message],
+      });
+      dispatch({ type: 'UPDATE_CHAT', payload: updatedChat });
+    } catch (error) {
+      console.error('Failed to update chat:', error);
+    }
+  };
+
+  const handleNewChat = async () => {
+    try {
+      const newChat = await createChat('New Chat', [], localStorage.getItem('user_id'));
+      console.log('newChat:', newChat);
+      dispatch({ type: 'NEW_CHAT', payload: newChat });
+    } catch (error) {
+      console.error('Failed to create new chat:', error);
+    }
   };
 
   const handleChatSelect = (index) => {
     dispatch({ type: 'SET_CURRENT_CHAT', payload: index });
   };
 
-  const handleRenameChat = (index) => {
+  const handleRenameChat = async (index) => {
     if (newChatName.trim()) {
-      dispatch({ type: 'RENAME_CHAT', payload: { index, name: newChatName } });
-      setNewChatName('');
-      setEditingChatIndex(null);
+      try {
+        const updatedChat = await updateChat(chats[index].id, newChatName);
+        dispatch({ type: 'RENAME_CHAT', payload: { index, name: updatedChat.title } });
+        setNewChatName('');
+        setEditingChatIndex(null);
+      } catch (error) {
+        console.error('Failed to rename chat:', error);
+      }
     }
   };
 
-  const handleDeleteChat = (index) => {
-    dispatch({ type: 'DELETE_CHAT', payload: index });
+  const handleDeleteChat = async (index) => {
+    try {
+      await deleteChat(chats[index].id);
+      dispatch({ type: 'DELETE_CHAT', payload: index });
+    } catch (error) {
+      console.error('Failed to delete chat:', error);
+    }
   };
 
   const handleLogin = () => {

@@ -1,20 +1,29 @@
 import axios from 'axios';
 import store from '../store';
 
-const API_URL = '/api/v1/chats';
+const API_URL = 'http://localhost:8080/api/v1/protected/chats';
 
 const getAuthHeaders = () => {
   const state = store.getState();
-  return {
-    headers: {
-      Authorization: `Bearer ${state.token}`,
-    },
-  };
+  // get local storage token
+  const token = localStorage.getItem('token');
+  if (state.token) {
+    return {
+      headers: {
+        Authorization: `Bearer ${state.token}`,
+      },
+    };
+  }
+    return {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    };
 };
 
-export const createChat = async (title) => {
+export const createChat = async (name, messages, user_id) => {
   try {
-    const response = await axios.post(API_URL, { title }, getAuthHeaders());
+    const response = await axios.post(API_URL, { name, messages, user_id }, getAuthHeaders());
     return response.data;
   } catch (error) {
     throw error;
